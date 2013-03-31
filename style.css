@@ -1,0 +1,24 @@
+/**
+ * Canvas plugin CSS
+ */
+
+div.jqplot-target{
+	margin:0;
+	background-color: transparent;
+    overflow: hidden;
+}
+div.jqplot-license-note, 
+div.rgraph-license-note {
+    margin:0;
+    /*color: #FAFAD2; */
+    color: #f5f5dc;
+	background-color: transparent;
+    /* background-color: #f5f5dc; */
+    font-size: 4pt;
+    text-align: right;
+    /* border: 1px solid red; */
+}
+div.jqplot-license-note a,
+div.rgraph-license-note a {
+    color: #f5f5dc;
+}
