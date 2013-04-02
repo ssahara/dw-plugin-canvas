@@ -1,3 +1,11 @@
+# .gitattributes for repository dw-plugin-canvas
+.gitattributes	export-ignore
+.gitignore	export-ignore
+gview.png	export-ignore
+README.md	export-ignore
+sample1.png	export-ignore
+images/*	export-ignore
+
 # Auto detect text files and perform LF normalization
 * text=auto
 

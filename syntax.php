@@ -45,8 +45,8 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
         $opts = array( // set default
                      'canvastype' => 'rgraph',
                      'chartid' => '',
-                     'width'   => '400px',
-                     'height'  => '300px',
+                     'width'   => '300px',
+                     'height'  => '150px',
                      );
 
         list($params, $script) = explode('>',$match,2);
@@ -73,18 +73,18 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
             // get width and height of iframe
             $matches=array();
-            if (preg_match('/(\d+(%|em|pt|px)?)\s*([,xX]\s*(\d+(%|em|pt|px)?))?/',$token,$matches)){
+            if (preg_match('/(\d+(px)?)\s*([,xX]\s*(\d+(px)?))?/',$token,$matches)){
                 if ($matches[4]) {
                     // width and height was given
                     $opts['width'] = $matches[1];
-                    if (!$matches[2]) $opts['width'].= 'px'; //default to pixel when no unit was set
+                    if (!$matches[2]) $opts['width'].= 'px';
                     $opts['height'] = $matches[4];
-                    if (!$matches[5]) $opts['height'].= 'px'; //default to pixel when no unit was set
+                    if (!$matches[5]) $opts['height'].= 'px';
                     continue;
                 } elseif ($matches[2]) {
                     // only height was given
                     $opts['height'] = $matches[1];
-                    if (!$matches[2]) $opts['height'].= 'px'; //default to pixel when no unit was set
+                    if (!$matches[2]) $opts['height'].= 'px';
                     continue;
                 }
             }
@@ -110,14 +110,17 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
         // prepare plot container
         switch ($opts['canvastype']) {
-            case "jqplot":
-                $html = '<div class="jqplot-license-note"';
-                $html.= ' style="width: '.$opts['width'].'">';
-                $html.= '<a href="http://www.jqplot.com/" title="Powered by jqPlot">Powered by jQplot</a>';
-                $html.= '</div>'.NL;
-                $html.= '<div class="canvas-box"';
+                // see its project page https://bitbucket.org/cleonello/jqplot/overview 
+                // jqPlot is currently available for use in all personal or commercial projects 
+                // under both the MIT and GPL version 2.0 licenses. This means that you can 
+                // choose the license that best suits your project and use it accordingly. 
+                $html.= '<div class="jqplot-target"';
                 $html.= ' id="'.$opts['chartid'].'"';
                 $html.= ' style="width: '.$opts['width'].'; height: '.$opts['height'].';"> ';
+                $html.= '</div>'.NL;
+                $html.= '<div class="jqplot-license-note"';
+                $html.= ' style="width: '.$opts['width'].'">';
+                $html.= '<a href="http://www.jqplot.com/" title="Powered by jqPlot">Powered by jQplot</a>';
                 $html.= '</div>'.NL;
                 break;
             case "rgraph":
@@ -128,15 +131,21 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
                 // of the Creative Commons Attribution 3.0 This means that you may use RGraph 
                 // for both commercial and non-commercial purposes as long as you link back to 
                 // this website (eg underneath the chart).
-                $html = '<div class="rgraph-license-note"';
+                $html.= '<canvas class="canvasbox"';
+                $html.= ' id="'.$opts['chartid'].'"';
+                $html.= ' width="'.substr($opts['width'],0,-2).'"';
+                $html.= ' height="'.substr($opts['height'],0,-2).'"';
+                $html.= '>'.'[No canvas support]'.'</canvas>'.NL;
+                $html.= '<div class="rgraph-license-note"';
                 $html.= ' style="width: '.$opts['width'].'">';
                 $html.= '<a href="http://www.rgraph.net/" title="Powered by RGraph">Powered by RGraph</a>';
                 $html.= '</div>'.NL;
+                break;
             default:
                 $html.= '<canvas class="canvasbox"';
                 $html.= ' id="'.$opts['chartid'].'"';
-                $html.= ' width="'.$opts['width'].'"';
-                $html.= ' height="'.$opts['height'].'"';
+                $html.= ' width="'.substr($opts['width'],0,-2).'"';
+                $html.= ' height="'.substr($opts['height'],0,-2).'"';
                 $html.= '>'.'[No canvas support]'.'</canvas>'.NL;
                 break;
         }
