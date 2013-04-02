@@ -1,7 +1,7 @@
 base   canvas
 author Satoshi Sahara
 email  sahara.satoshi@gmail.com
-date   2013-03-31
+date   2013-04-02
 name   Canvas plugin
-desc   Provide HTML5 Canvas functionality for DokuWiki page. Additionally, Inline JavaScript plugin (inlinejs) required.
+desc   Provide HTML5 Canvas functionality for DokuWiki page.
 url    https://www.dokuwiki.org/plugin:canvas

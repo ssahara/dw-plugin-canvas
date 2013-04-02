@@ -110,6 +110,7 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
         // prepare plot container
         switch ($opts['canvastype']) {
+            case "jqplot":
                 // see its project page https://bitbucket.org/cleonello/jqplot/overview 
                 // jqPlot is currently available for use in all personal or commercial projects 
                 // under both the MIT and GPL version 2.0 licenses. This means that you can 
