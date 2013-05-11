@@ -156,7 +156,7 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
         if (empty($script)) return true;
         if(!plugin_isdisabled('inlinejs')) {
             $embedder = plugin_load('helper','inlinejs');
-            $embedder->renderInlineJsHtml(&$renderer,$script);
+            $embedder->renderInlineJsHtml($renderer,$script);
         }
         return true;
     }
