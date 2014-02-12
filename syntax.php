@@ -10,12 +10,9 @@
  * REMARK: depends on function renderInlineJsHtml()
  *         of Helper component of InlineJS plugin
  * SYNTAX:
- *        <canvas:[rgraph|jqplot] chartid width,height>
+ *        <canvas[:rgraph|:jqplot] chartid width,height>
  *         ... javascript ...
  *        </canvas>
- *        <rgraph chartid width,height > ... </rgraph>
- *        <jqplot chartid width,height > ... </jqplot>
- *
  */
 // must be run within Dokuwiki
 if (!defined('DOKU_INC')) die();
@@ -28,13 +25,19 @@ require_once DOKU_PLUGIN.'syntax.php';
  */
 class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
-    function getType()  { return 'substition'; }
+    protected $entry_pattern = '<canvas.*?>(?=.*?</canvas>)';
+    protected $exit_pattern  = '</canvas>';
+
+    function getType()  { return 'protected'; }
     //function getPType() { return 'block'; }
     function getSort()  { return 160; }
     function connectTo($mode) {
-      $this->Lexer->addSpecialPattern('<canvas.*?</canvas>',$mode,'plugin_canvas');
-      $this->Lexer->addSpecialPattern('<jqplot .*?</jqplot>',$mode,'plugin_canvas');
-      $this->Lexer->addSpecialPattern('<rgraph .*?</rgraph>',$mode,'plugin_canvas');
+      $this->Lexer->addEntryPattern($this->entry_pattern, $mode,
+          implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent()))
+      );
+      $this->Lexer->addExitPattern($this->exit_pattern,
+          implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent()))
+      );
     }
 
  /**
@@ -42,81 +45,95 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
   */
     public function handle($match, $state, $pos, &$handler){
 
-        $opts = array( // set default
-                     'canvastype' => 'rgraph',
-                     'chartid' => '',
-                     'width'   => '300px',
-                     'height'  => '150px',
-                     );
+        global $conf;
+        // check whether inlinejs plugin exists
+        if (plugin_isdisabled('inlinejs')) return false;
+        $inlinejs =& plugin_load('syntax', 'inlinejs');
+        if ($inlinejs->getConf('follow_htmlok') && !$conf['htmlok']) return false;
 
-        list($params, $script) = explode('>',$match,2);
+        switch ($state) {
+            case DOKU_LEXER_ENTER:
+                // at least cid one delimiter required to have unique canvas id.
+                if (strpos($match,' ') === false) return false;
+                return array($state, $match);
 
-        // script part
-        $p = strrpos($script, '<'); // get position of beginning of ending markup
-        $script = substr($script, 0, $p-strlen($script)); // drop ending markup
+            case DOKU_LEXER_UNMATCHED:
+                // javascript code
+                return array($state, $match);
 
-        // param part
-        // split the phrase by any number of space characters,
-        // which include " ", \r, \t, \n and \f
-        $tokens = preg_split('/\s+/', $params);
-
-        //what markup used?
-        $markup = array_shift($tokens);
-        if (strpos($markup,':') !== false) { // '<canvas:canvastype'
-            list($markup, $canvastype) = explode(':',$markup,2);
-        } else { // '<jqplot' or '<rgraph'
-            $canvastype = substr($markup,1); // drop '<'
+            case DOKU_LEXER_EXIT:
+                return array($state, '');
         }
-        $opts['canvastype'] = strtolower($canvastype);
-
-        foreach ($tokens as $token) {
-
-            // get width and height of iframe
-            $matches=array();
-            if (preg_match('/(\d+(px)?)\s*([,xX]\s*(\d+(px)?))?/',$token,$matches)){
-                if ($matches[4]) {
-                    // width and height was given
-                    $opts['width'] = $matches[1];
-                    if (!$matches[2]) $opts['width'].= 'px';
-                    $opts['height'] = $matches[4];
-                    if (!$matches[5]) $opts['height'].= 'px';
-                    continue;
-                } elseif ($matches[2]) {
-                    // only height was given
-                    $opts['height'] = $matches[1];
-                    if (!$matches[2]) $opts['height'].= 'px';
-                    continue;
-                }
-            }
-            // get chartid, first match prioritized
-            //restrict token characters to prevent any malicious chartid
-            if (preg_match('/[^A-Za-z0-9_-]/',$token)) continue;
-            if (empty($opts['chartid'])) $opts['chartid'] = $token;
-        }
-        return array($state, $opts, $script);
+        return false;
     }
 
  /**
   * Render
   */
-    public function render($mode, &$renderer, $data) {
+    public function render($mode, &$renderer, $indata) {
+
+        if (empty($indata)) return false;
+        list($state, $data) = $indata;
 
         if ($mode != 'xhtml') return false;
 
-        list($state, $opts, $script) = $data;
+        switch ($state) {
+            case DOKU_LEXER_ENTER:
+                // get canvas type and id
+                if ( substr($data, 1, 7) == 'canvas:') {
+                    $match = trim(substr($data, 8, -1));
+                } else {
+                    $match = trim(substr($data, 1, -1));
+                }
+                list($ctype, $cid, $cparam) = explode($match, ' ', 3);
+                $param = $this->getArguments($cparam, 'width');
 
-        // check whether chartid defined?
-        if (empty($opts['chartid'])) return false;
+                // prepare canvas
+                $renderer->doc.= $this->_htmlCanvas($cid, $ctype, $param);
+                // open script tag to output embedded javascript
+                $renderer->doc.= '<script type="text/javascript">'.NL.'/*<![CDATA[*/';
+                break;
+
+            case DOKU_LEXER_UNMATCHED:
+                // output javascript
+                $renderer->doc.= $data;
+                break;
+
+            case DOKU_LEXER_EXIT:
+                // close script tag
+                $renderer->doc.=  '/*!]]>*/'.NL.'</script>'.NL;
+                break;
+        }
+        return true;
+    }
+
+
+    /* ---------------------------------------------------------
+     * build html of canvas
+     *
+     * @param $cid   (string) canvas id
+     * @param $ctype (string) canvas type
+     * @param $opts  (array)  canvas options (width, height, ...)
+     * ---------------------------------------------------------
+     */
+    protected function _htmlCanvas($cid, $ctype, $opts) {
+
+        // check whether canvas id is given?
+        if (empty($cid)) return false;
+
+        // set default canvas size
+        if (!array_key_exists('width', $opts)) $opts['width']  = '300px';
+        if (!array_key_exists('height',$opts)) $opts['height'] = '150px';
 
         // prepare plot container
-        switch ($opts['canvastype']) {
+        switch ($ctype) {
             case "jqplot":
                 // see its project page https://bitbucket.org/cleonello/jqplot/overview 
                 // jqPlot is currently available for use in all personal or commercial projects 
                 // under both the MIT and GPL version 2.0 licenses. This means that you can 
                 // choose the license that best suits your project and use it accordingly. 
                 $html.= '<div class="jqplot-target"';
-                $html.= ' id="'.$opts['chartid'].'"';
+                $html.= ' id="'.$cid.'"';
                 $html.= ' style="width: '.$opts['width'].'; height: '.$opts['height'].';"> ';
                 $html.= '</div>'.NL;
                 $html.= '<div class="jqplot-license-note"';
@@ -133,7 +150,7 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
                 // for both commercial and non-commercial purposes as long as you link back to 
                 // this website (eg underneath the chart).
                 $html.= '<canvas class="canvasbox"';
-                $html.= ' id="'.$opts['chartid'].'"';
+                $html.= ' id="'.$cid.'"';
                 $html.= ' width="'.substr($opts['width'],0,-2).'"';
                 $html.= ' height="'.substr($opts['height'],0,-2).'"';
                 $html.= '>'.'[No canvas support]'.'</canvas>'.NL;
@@ -144,20 +161,82 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
                 break;
             default:
                 $html.= '<canvas class="canvasbox"';
-                $html.= ' id="'.$opts['chartid'].'"';
+                $html.= ' id="'.$cid.'"';
                 $html.= ' width="'.substr($opts['width'],0,-2).'"';
                 $html.= ' height="'.substr($opts['height'],0,-2).'"';
                 $html.= '>'.'[No canvas support]'.'</canvas>'.NL;
                 break;
         }
-        $renderer->doc.=$html;
-
-        // prepare inline javascript using helper Component of InlineJS plugin
-        if (empty($script)) return true;
-        if(!plugin_isdisabled('inlinejs')) {
-            $embedder = plugin_load('helper','inlinejs');
-            $embedder->renderInlineJsHtml($renderer,$script);
-        }
-        return true;
+        return $html;
     }
+
+
+    /* ---------------------------------------------------------
+     * get each named/non-named arguments as array variable
+     *
+     * Named arguments is to be given as key="value" (quoted).
+     * Non-named arguments is assumed as boolean.
+     *
+     * @param $args (string) arguments
+     * @param $singlekey (string) key name if single numeric value was given
+     * @return (array) parsed arguments in $arg['key']=value
+     * ---------------------------------------------------------
+     */
+    protected function getArguments($args='', $singlekey='height') {
+        $arg = array();
+        // get named arguments (key="value"), ex: width="100"
+        // value must be quoted in argument string.
+        $val = "([\"'`])(?:[^\\\\\"'`]|\\\\.)*\g{-1}";
+        $pattern = "/(\w+)\s*=\s*($val)/";
+        preg_match_all($pattern, $args, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            $arg[$match[1]] = substr($match[2], 1, -1); // drop quates from value string
+            $args = str_replace($match[0], '', $args); // remove parsed substring
+        }
+
+        // get named numeric value argument, ex width=100
+        // numeric value may not be quoted in argument string.
+        $val = '\d+';
+        $pattern = "/(\w+)\s*=\s*($val)/";
+        preg_match_all($pattern, $args, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            $arg[$match[1]] = (int)$match[2];
+            $args = str_replace($match[0], '', $args); // remove parsed substring
+        }
+
+        // get width and/or height, specified as non-named arguments
+        $unit = 'px';
+        $pattern = '/(?:^| )(\d+(%|em|pt|px)?)\s*([,xX]?(\d+(%|em|pt|px)?))?(?: |$)/';
+        if (preg_match($pattern, $args, $matches)) {
+            if ($matches[4]) {
+                // width and height with unit was given
+                $arg['width'] = $matches[1];
+                if (!$matches[2]) $arg['width'].= $unit;
+                $arg['height'] = $matches[4];
+                if (!$matches[5]) $arg['height'].= $unit;
+            } elseif ($matches[2]) {
+                // width or height(=assumed as default) with unit was given
+                // preferred key name given as second parameter of this function
+                $arg[$singlekey] = $matches[1];
+                if (!$matches[2]) $arg[$singlekey].= $unit;
+            } elseif ($matches[1]) {
+                // numeric token is assumed as width or height
+                $arg[$singlekey] = $matches[1].$unit;
+            }
+            $args = str_replace($matches[0], '', $args); // remove parsed substring
+        }
+
+        // get flags or non-named arguments, ex: showdate, no-showfooter
+        $tokens = preg_split('/\s+/', $args);
+        foreach ($tokens as $token) {
+            if (preg_match('/^(?:!|not?)(.+)/',$token, $matches)) {
+                // denyed/negative prefixed token
+                $arg[$matches[1]] = false;
+            } elseif (preg_match('/^[A-Za-z]/',$token)) {
+                $arg[$token] = true;
+            }
+        }
+        return $arg;
+    }
+
 }
