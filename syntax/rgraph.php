@@ -10,7 +10,7 @@
  *         ... javascript ...
  *        </rgraph>
  */
-require_once DOKU_INC.'lib/plugins/canvas/canvas.php';
+require_once DOKU_INC.'lib/plugins/canvas/syntax/canvas.php';
 
 class syntax_plugin_canvas_rgraph extends syntax_plugin_canvas_canvas {
 
