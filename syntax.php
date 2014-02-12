@@ -32,12 +32,14 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
     //function getPType() { return 'block'; }
     function getSort()  { return 160; }
     function connectTo($mode) {
-      $this->Lexer->addEntryPattern($this->entry_pattern, $mode,
-          implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent()))
-      );
-      $this->Lexer->addExitPattern($this->exit_pattern,
-          implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent()))
-      );
+        $this->Lexer->addEntryPattern($this->entry_pattern, $mode,
+            implode('_', array('plugin',$this->getPluginName()))
+        );
+    }
+    function postConnect() {
+        $this->Lexer->addExitPattern($this->exit_pattern,
+            implode('_', array('plugin',$this->getPluginName()))
+        );
     }
 
  /**
@@ -47,9 +49,10 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
         global $conf;
         // check whether inlinejs plugin exists
-        if (plugin_isdisabled('inlinejs')) return false;
-        $inlinejs =& plugin_load('syntax', 'inlinejs');
-        if ($inlinejs->getConf('follow_htmlok') && !$conf['htmlok']) return false;
+        if (!plugin_isdisabled('inlinejs')) {
+            $inlinejs =& plugin_load('syntax', 'inlinejs_embedder');
+            if ($inlinejs->getConf('follow_htmlok') && !$conf['htmlok']) return false;
+        } else return false;
 
         switch ($state) {
             case DOKU_LEXER_ENTER:
@@ -85,7 +88,7 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
                 } else {
                     $match = trim(substr($data, 1, -1));
                 }
-                list($ctype, $cid, $cparam) = explode($match, ' ', 3);
+                list($ctype, $cid, $cparam) = explode(' ', $match, 3);
                 $param = $this->getArguments($cparam, 'width');
 
                 // prepare canvas
