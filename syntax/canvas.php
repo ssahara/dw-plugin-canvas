@@ -1,14 +1,13 @@
 <?php
 /**
- * DokuWiki Canvas Plugin (Syntax component)
+ * DokuWiki Syntax Plugin Canvas canvas
  *
  *  html5 canvas functionality
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  Sahara Satoshi <sahara.satoshi@gmail.com>
  *
- * REMARK: depends on function renderInlineJsHtml()
- *         of Helper component of InlineJS plugin
+ * REMARK: depends on InlineJS embedder (syntax component)
  * SYNTAX:
  *        <canvas[:rgraph|:jqplot] chartid width,height>
  *         ... javascript ...
@@ -23,7 +22,7 @@ require_once DOKU_PLUGIN.'syntax.php';
  * All DokuWiki plugins to extend the parser/rendering mechanism
  * need to inherit from this class
  */
-class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
+class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
 
     protected $entry_pattern = '<canvas.*?>(?=.*?</canvas>)';
     protected $exit_pattern  = '</canvas>';
@@ -33,12 +32,12 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
     function getSort()  { return 160; }
     function connectTo($mode) {
         $this->Lexer->addEntryPattern($this->entry_pattern, $mode,
-            implode('_', array('plugin',$this->getPluginName()))
+            implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent(),))
         );
     }
     function postConnect() {
         $this->Lexer->addExitPattern($this->exit_pattern,
-            implode('_', array('plugin',$this->getPluginName()))
+            implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent(),))
         );
     }
 
@@ -56,7 +55,7 @@ class syntax_plugin_canvas extends DokuWiki_Syntax_Plugin {
 
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                // at least cid one delimiter required to have unique canvas id.
+                // at least one delimiter required to have unique canvas id.
                 if (strpos($match,' ') === false) return false;
                 return array($state, $match);
 
