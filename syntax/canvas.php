@@ -16,6 +16,7 @@
 // must be run within Dokuwiki
 if (!defined('DOKU_INC')) die();
 if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+if (!defined('NL')) define('NL',"\n");
 require_once DOKU_PLUGIN.'syntax.php';
 
 /**
@@ -51,12 +52,18 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
         if (!plugin_isdisabled('inlinejs')) {
             $inlinejs =& plugin_load('syntax', 'inlinejs_embedder');
             if ($inlinejs->getConf('follow_htmlok') && !$conf['htmlok']) return false;
-        } else return false;
+        } else {
+            msg($this->getPluginName().': Plugin InlineJS disabled.',-1); 
+            return false;
+        }
 
         switch ($state) {
             case DOKU_LEXER_ENTER:
                 // at least one delimiter required to have unique canvas id.
-                if (strpos($match,' ') === false) return false;
+                //if (strpos($match,' ') === false) {
+                //    msg($this->getPluginName().': syntax wrong.',-1); 
+                //    return false;
+                //}
                 return array($state, $match);
 
             case DOKU_LEXER_UNMATCHED:
@@ -88,6 +95,9 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
                     $match = trim(substr($data, 1, -1));
                 }
                 list($ctype, $cid, $cparam) = explode(' ', $match, 3);
+                if (empty($cid)) {
+                    msg($this->getPluginName().': syntax wrong -- '.hsc($data),-1); 
+                }
                 $param = $this->getArguments($cparam, 'width');
 
                 // prepare canvas
@@ -228,7 +238,7 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
             $args = str_replace($matches[0], '', $args); // remove parsed substring
         }
 
-        // get flags or non-named arguments, ex: showdate, no-showfooter
+        // get flags or non-named arguments, ex: showdate, noshowfooter
         $tokens = preg_split('/\s+/', $args);
         foreach ($tokens as $token) {
             if (preg_match('/^(?:!|not?)(.+)/',$token, $matches)) {
