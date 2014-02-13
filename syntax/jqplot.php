@@ -10,7 +10,7 @@
  *         ... javascript ...
  *        </jqplot>
  */
-require_once DOKU_INC.'lib/plugins/canvas/syntax/canvas.php';
+require_once DOKU_PLUGIN.'canvas/syntax/canvas.php';
 
 class syntax_plugin_canvas_jqplot extends syntax_plugin_canvas_canvas {
 
