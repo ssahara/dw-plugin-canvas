@@ -45,7 +45,7 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
  /**
   * handle syntax
   */
-    public function handle($match, $state, $pos, &$handler){
+    public function handle($match, $state, $pos, Doku_Handler $handler){
 
         global $conf;
         // check whether inlinejs plugin exists
@@ -79,12 +79,12 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
  /**
   * Render
   */
-    public function render($mode, &$renderer, $indata) {
+    public function render($format, Doku_Renderer $renderer, $indata) {
 
         if (empty($indata)) return false;
         list($state, $data) = $indata;
 
-        if ($mode != 'xhtml') return false;
+        if ($format != 'xhtml') return false;
 
         switch ($state) {
             case DOKU_LEXER_ENTER:
