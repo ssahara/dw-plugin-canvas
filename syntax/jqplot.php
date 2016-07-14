@@ -14,7 +14,7 @@ require_once DOKU_PLUGIN.'canvas/syntax/canvas.php';
 
 class syntax_plugin_canvas_jqplot extends syntax_plugin_canvas_canvas {
 
-    protected $entry_pattern = '<jqplot.*?>(?=.*?</jqplot>)';
+    protected $entry_pattern = '<jqplot\b.*?>(?=.*?</jqplot>)';
     protected $exit_pattern  = '</jqplot>';
 
 }

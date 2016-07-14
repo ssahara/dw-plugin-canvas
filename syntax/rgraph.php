@@ -14,7 +14,7 @@ require_once DOKU_PLUGIN.'canvas/syntax/canvas.php';
 
 class syntax_plugin_canvas_rgraph extends syntax_plugin_canvas_canvas {
 
-    protected $entry_pattern = '<rgraph.*?>(?=.*?</rgraph>)';
+    protected $entry_pattern = '<rgraph\b.*?>(?=.*?</rgraph>)';
     protected $exit_pattern  = '</rgraph>';
 
 }

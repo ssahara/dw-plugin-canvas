@@ -15,9 +15,7 @@
  */
 // must be run within Dokuwiki
 if (!defined('DOKU_INC')) die();
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 if (!defined('NL')) define('NL',"\n");
-require_once DOKU_PLUGIN.'syntax.php';
 
 /**
  * All DokuWiki plugins to extend the parser/rendering mechanism
@@ -25,21 +23,22 @@ require_once DOKU_PLUGIN.'syntax.php';
  */
 class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
 
-    protected $entry_pattern = '<canvas.*?>(?=.*?</canvas>)';
+    protected $mode;
+    protected $entry_pattern = '<canvas\b.*?>(?=.*?</canvas>)';
     protected $exit_pattern  = '</canvas>';
+
+    function __construct() {
+        $this->mode = substr(get_class($this), 7);
+    }
 
     function getType()  { return 'protected'; }
     //function getPType() { return 'block'; }
     function getSort()  { return 160; }
     function connectTo($mode) {
-        $this->Lexer->addEntryPattern($this->entry_pattern, $mode,
-            implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent(),))
-        );
+        $this->Lexer->addEntryPattern($this->entry_pattern, $mode, $this->mode);
     }
     function postConnect() {
-        $this->Lexer->addExitPattern($this->exit_pattern,
-            implode('_', array('plugin',$this->getPluginName(),$this->getPluginComponent(),))
-        );
+        $this->Lexer->addExitPattern($this->exit_pattern, $this->mode);
     }
 
  /**
@@ -50,7 +49,7 @@ class syntax_plugin_canvas_canvas extends DokuWiki_Syntax_Plugin {
         global $conf;
         // check whether inlinejs plugin exists
         if (!plugin_isdisabled('inlinejs')) {
-            $inlinejs =& plugin_load('syntax', 'inlinejs_embedder');
+            $inlinejs = plugin_load('syntax', 'inlinejs_embedder');
             if ($inlinejs->getConf('follow_htmlok') && !$conf['htmlok']) return false;
         } else {
             msg($this->getPluginName().': Plugin InlineJS disabled.',-1); 
